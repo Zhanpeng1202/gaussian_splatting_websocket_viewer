@@ -46,4 +46,4 @@ We might see some lagging when dragging rapidly, not in the gaussain splatting's
 We tried to identify the issue, it seems to be located at the communication part between vscode forward process and local java script. If you know more information, we are more than happy to discuss with you.
 
 -----------------------------
-Code is built based on the Inria Gaussain Splatting repository(<https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/>) and the some other parts are provided by Bernhard Kerbl.
+Code is built based on the [Inria Gaussain Splatting repository](<https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/>) and the some other parts are provided by Bernhard Kerbl.
