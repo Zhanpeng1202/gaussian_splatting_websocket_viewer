@@ -34,7 +34,11 @@ git clone git@github.com:graphdeco-inria/gaussian-splatting.git --recursive
 |   |   |---network_gui.py
 |   |   |---network_gui_websocket.py
 
+|   |---train.py 
+# replace train.py with that provided in this repository
 ```
+
+After we start training on the server, we open the render.html on local computer, we should be able to see the streaming for gaussain spaltting.
 
 ## Potential Lagging for Real-time Rendering
 
@@ -42,4 +46,4 @@ We might see some lagging when dragging rapidly, not in the gaussain splatting's
 We tried to identify the issue, it seems to be located at the communication part between vscode forward process and local java script. If you know more information, we are more than happy to discuss with you.
 
 -----------------------------
-Code is built based on the Inria Gaussain Splatting repository and the some other parts are provided by Bernhard Kerbl.
+Code is built based on the Inria Gaussain Splatting repository(<https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/>) and the some other parts are provided by Bernhard Kerbl.
