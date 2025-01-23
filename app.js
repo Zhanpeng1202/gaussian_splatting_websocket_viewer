@@ -1,5 +1,6 @@
 const socket = new WebSocket('ws://localhost:6119');
 
+
 // Get the canvas and setup WebGL context
 const canvas = document.getElementById('glcanvas');
 const gl = canvas.getContext('webgl');
@@ -343,11 +344,7 @@ var start;
 var end;
 
 socket.onmessage = function (event) {
-    start = performance.now();  // Get the start time
-    console.log(`Time from python to webpage ${start - end} milliseconds`)
     const buffer = event.data;
-
-
     const view = new DataView(buffer);
     const width = view.getInt32(0, true);  
     const height = view.getInt32(4, true);  
@@ -355,31 +352,24 @@ socket.onmessage = function (event) {
 	const canvas = document.getElementById('glcanvas');
 	if(canvas.width != width || canvas.height != height)
 	{
-		const dpr = window.devicePixelRatio || 1; // Get the device's pixel ratio
-
-		// Set the drawing buffer's size
+		const dpr = window.devicePixelRatio || 1; 
 		canvas.width = width * dpr;
 		canvas.height = height * dpr;
 		
 		gl.viewport(0, 0, width * dpr, height * dpr)
 	}
 
-    // Create a TypedArray for the remaining bytes (tensor data)
-    // Adjust the offset and length according to the actual data size
-    const data = new Uint8Array(buffer, 8);  // Skip the first 8 bytes
-	
-		 if (data.byteLength !== width * height * 3) {
-	 console.log(data.byteLength, width * height * 3)
-	 }
 
-    //console.log("Data as array:", data);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, width, height, 0, gl.RGB, gl.UNSIGNED_BYTE, data);
-	
-	drawScene(gl, programInfo, buffers);
+    const data = new Uint8Array(buffer, 8);  
+    const blob = new Blob([data], { type: "image/jpeg" });
+    const img = new Image();
+    img.src = URL.createObjectURL(blob);
+    img.onload = function (){
+        gl.texImage2D(gl.TEXTURE_2D,0,gl.RGBA,gl.RGBA,gl.UNSIGNED_BYTE,img);
+        drawScene(gl, programInfo, buffers);
+    }
+
 	sendInteger();
-    end = performance.now();  // Get the end time
-    // console.log("Webpage finish send data to GUI_WS")
-    // console.log(`Time consumed: ${end - start} milliseconds inside the js script`)
 };
 
 socket.onerror = function (error) {
