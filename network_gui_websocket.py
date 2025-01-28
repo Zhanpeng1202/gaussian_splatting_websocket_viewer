@@ -1,11 +1,17 @@
+host = "127.0.0.1"
+port = 6019
+
 import asyncio
 import websockets
 import threading
 import struct
+import time
 import math
 import numpy as np
 import torch
 import copy
+from PIL import Image
+import cv2
 from utils.graphics_utils import getWorld2View2, getProjectionMatrix
 
 curr_id = -1
@@ -37,6 +43,7 @@ def eulerRotation(theata,phi,psi):
     return yaw@pitch@roll.tolist()
 
 async def echo(websocket, path):
+    start = time.time()
     global curr_id
     
     global data_array
@@ -51,6 +58,7 @@ async def echo(websocket, path):
                 num_integers = (len(message)) // 4 
                 received_floats = []
                 int_received = int.from_bytes(message[0:4], byteorder='big', signed=True)
+                
                 webpage_train_speed = value = struct.unpack('>f', message[4:8])[0]
 
                 for i in range(2,num_integers):
@@ -61,6 +69,7 @@ async def echo(websocket, path):
                 curr_id = int_received 
                 data_array = received_floats
                 header = struct.pack('ii', latest_width, latest_height) 
+                
                 await websocket.send(header + latest_result)
                   
     except websockets.exceptions.ConnectionClosed as e:
@@ -74,7 +83,9 @@ def run_asyncio_loop(wish_host, wish_port):
     asyncio.run(websocket_server(wish_host, wish_port))
 
 def init(wish_host, wish_port):
-    thread = threading.Thread(target=run_asyncio_loop,args=[wish_host, wish_port])    
+    thread = threading.Thread(target=run_asyncio_loop,args=[wish_host, wish_port])
+    data_array=[0,0,0,0,0,0,0,0,0]
+    
     thread.start()
 
 
@@ -96,12 +107,13 @@ def update_camera(web_cam):
 def render_for_websocket(render, gaussians, pipe, background):
     global data_array
     if data_array == None:
-        print("Refresh the webpage in the local computer")
+        # print("Refresh the webpage in the local computer")
         return
     else:
         global web_camera
         extrin = data_array
 
+        print("rendering")
         x,y,z = extrin[0],extrin[1],extrin[2]
         theata,phi,psi = extrin[3],extrin[4],extrin[5]
         scale = extrin[6]
@@ -111,13 +123,36 @@ def render_for_websocket(render, gaussians, pipe, background):
         
         web_xyz = [x+x0,y+y0,z+z0]
         web_camera.T = web_xyz
-        
         update_camera(web_camera)
         
+        
+         
         net_image = render(web_camera, gaussians, pipe, background, scaling_modifier = scale)["render"]
+            
         global latest_height, latest_width, latest_result
         latest_width = net_image.size(2)
         latest_height = net_image.size(1)
-        latest_result = memoryview((torch.clamp(net_image, min=0, max=1.0) * 255).byte().permute(1, 2, 0).contiguous().cpu().numpy())
+        tmp = (torch.clamp(net_image, min=0, max=1.0) * 255).byte().permute(1, 2, 0).contiguous().detach().cpu().numpy()
+        
+        tmp = cv2.cvtColor(tmp, cv2.COLOR_RGB2BGR)
+        
+        # with io.BytesIO() as jpeg_buffer:
+        #     image.save(jpeg_buffer, format="JPEG", quality=85)  # Quality ranges from 1 (worst) to 95 (best)
+        #     jpg_data = jpeg_buffer.getvalue()
+
+        encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]  # set quality level
+        success, encoded_img = cv2.imencode(".jpg", tmp, encode_param)
+        if success:
+            jpg_data = encoded_img.tobytes()
+        else:
+            print("Failed to compress image to .jpg")
+        
+        latest_result = memoryview(jpg_data)
+
+
+        
+        
+
+
 
 
